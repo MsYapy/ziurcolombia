@@ -17,5 +17,33 @@ public class InventoryController : ControllerBase
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-  
+    /// <summary>
+    /// Gets all movements from the Ziur API
+    /// </summary>
+    /// <returns>List of movements</returns>
+    [HttpGet("movements")]
+    public async Task<ActionResult<List<MovementDto>>> GetMovements(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var movements = await _inventoryService.GetMovementsAsync(cancellationToken);
+            return Ok(movements);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Request cancelled by client");
+            return StatusCode(499); // Client Closed Request
+        }
+        catch (ApplicationException ex)
+        {
+            _logger.LogWarning(ex, "Application error while fetching movements");
+            return BadRequest(new { error = "Error al obtener los movimientos. Por favor, intente más tarde." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while fetching movements");
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { error = "Un error inesperado ocurrió. Por favor, intente más tarde." });
+        }
+    }
 }
