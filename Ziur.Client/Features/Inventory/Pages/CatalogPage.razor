@@ -1,19 +1,163 @@
-﻿@page "/catalog"
-@rendermode InteractiveAuto
+﻿@page "/"
+@rendermode InteractiveServer
+@inject InventoryServiceClient InventoryServiceClient
+@inject ILogger<CatalogPage> Logger
+@inject PersistentComponentState ApplicationState
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+@using Ziur.Shared.Models.DTOs
+@using Ziur.Client.Features.Inventory.Services
+@using Ziur.Client.Features.Inventory.Components
 
-<PageTitle>Catalog</PageTitle>
+<PageTitle>Catálogo de Movimientos - Ziur</PageTitle>
 
-<h1>Catalog</h1>
+<div class="catalog-page">
+	<div class="catalog-header">
+		<h1>Catálogo de Movimientos</h1>
+	</div>
 
-<p role="status">Current count: @currentCount</p>
+	@if (errorMessage is not null)
+	{
+		<div class="error-state">
+			<div class="error-icon">
+				<i class="bi bi-exclamation-triangle-fill"></i>
+			</div>
+			<h3 class="error-title">Error al cargar el catálogo</h3>
+			<p class="error-message">@errorMessage</p>
+			<button class="retry-button" @onclick="LoadCatalogAsync">
+				<i class="bi bi-arrow-clockwise"></i>
+				<span>Reintentar</span>
+			</button>
+		</div>
+	}
+	else if (movements is null)
+	{
+		<div class="loading-state">
+			<div class="loading-spinner">
+				<div class="spinner-circle"></div>
+				<div class="spinner-circle"></div>
+				<div class="spinner-circle"></div>
+			</div>
+			<p class="loading-text">Cargando catálogo...</p>
+		</div>
+	}
+	else
+	{
+		<div class="catalog-controls">
+			<SearchBar 
+				SearchTerm="@searchTerm" 
+				SearchTermChanged="OnSearchChanged"
+				Placeholder="Buscar por código o descripción..." 
+			/>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+			<div class="filter-info">
+				<span>Registros: <strong>@filteredData.Count</strong> de <strong>@movements.Count</strong></span>
+			</div>
+		</div>
+
+		<DocumentoGrid 
+			Movements="filteredData"
+			EmptyMessage="No se encontraron registros que coincidan con tu búsqueda"
+		/>
+	}
+</div>
 
 @code {
-    private int currentCount = 0;
+	private List<MovementDto>? movements;
+	private List<MovementDto> filteredData = new();
+	private string searchTerm = string.Empty;
+	private string? errorMessage;
+	
+	private CancellationTokenSource? cts;
+	private PersistingComponentStateSubscription persistingSubscription;
 
-    private void IncrementCount()
-    {
-        currentCount++;
-    }
+	protected override async Task OnInitializedAsync()
+	{
+		persistingSubscription = ApplicationState.RegisterOnPersisting(PersistData);
+
+		if (!ApplicationState.TryTakeFromJson<List<MovementDto>>("movements", out var restoredMovements))
+		{
+			await LoadCatalogAsync();
+		}
+		else
+		{
+			movements = restoredMovements;
+			ApplyFilter();
+		}
+	}
+
+	private Task PersistData()
+	{
+		ApplicationState.PersistAsJson("movements", movements);
+		return Task.CompletedTask;
+	}
+
+	private async Task LoadCatalogAsync()
+	{
+		if (cts is not null)
+		{
+			await cts.CancelAsync();
+			cts.Dispose();
+		}
+
+		cts = new CancellationTokenSource();
+		var cancellationToken = cts.Token;
+
+		errorMessage = null;
+		movements = null;
+		filteredData.Clear();
+
+		try
+		{
+			movements = await InventoryServiceClient.GetMovementsAsync(cancellationToken);
+			ApplyFilter();
+		}
+		catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+		{
+			Logger.LogInformation("Load operation was cancelled");
+		}
+		catch (ApplicationException ex)
+		{
+			errorMessage = "Error al cargar los movimientos. Por favor, intente más tarde.";
+			Logger.LogError(ex, "Error loading movements");
+		}
+		catch (Exception ex)
+		{
+			errorMessage = "Ocurrió un error inesperado. Por favor, intente más tarde.";
+			Logger.LogError(ex, "Unexpected error loading movements");
+		}
+	}
+
+	private Task OnSearchChanged(string value)
+	{
+		searchTerm = value;
+		ApplyFilter();
+		return Task.CompletedTask;
+	}
+
+	private void ApplyFilter()
+	{
+		if (movements is null)
+		{
+			filteredData = new();
+			return;
+		}
+
+		filteredData = movements
+			.Where(m => m.Codigo.ToString().Contains(searchTerm, StringComparison.OrdinalIgnoreCase)
+					 || m.Descripcion.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+			.ToList();
+	}
+
+	public async ValueTask DisposeAsync()
+	{
+		persistingSubscription.Dispose();
+		
+		if (cts is not null)
+		{
+			await cts.CancelAsync();
+			cts.Dispose();
+		}
+	}
 }
+
