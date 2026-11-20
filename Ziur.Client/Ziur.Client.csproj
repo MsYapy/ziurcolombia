@@ -18,4 +18,8 @@
     <Folder Include="Features\Inventory\Components\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Ziur.Shared\Ziur.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="Ziur.Client/Ziur.Client.csproj" />
+  <Project Path="Ziur.Infrastructure/Ziur.Infrastructure.csproj" />
   <Project Path="Ziur/Ziur.csproj" />
 </Solution>

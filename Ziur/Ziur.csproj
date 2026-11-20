@@ -12,4 +12,9 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="10.0.15" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Ziur.Shared\Ziur.Shared.csproj" />
+    <ProjectReference Include="..\Ziur.Infrastructure\Ziur.Infrastructure.csproj" />
+  </ItemGroup>
+
 </Project>
