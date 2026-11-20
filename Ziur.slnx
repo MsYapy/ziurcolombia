@@ -3,4 +3,5 @@
   <Project Path="Ziur.Infrastructure/Ziur.Infrastructure.csproj" />
   <Project Path="Ziur.Client/Ziur.Client.csproj" />
   <Project Path="Ziur/Ziur.csproj" />
+  <Project Path="Ziur.Tests/Ziur.Tests.csproj" />
 </Solution>

@@ -1,10 +1,11 @@
 using Ziur.Shared.Models.DTOs;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
+using Ziur.Infrastructure.Interfaces;
 
 namespace Ziur.Infrastructure.Services;
 
-public class InventoryService
+public class InventoryService : IInventoryService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<InventoryService> _logger;

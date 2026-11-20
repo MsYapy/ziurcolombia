@@ -1,6 +1,7 @@
 using Ziur.Client.Features.Inventory.Services;
 using Ziur.Components;
 using Ziur.Infrastructure.Services;
+using Ziur.Infrastructure.Interfaces;
 using Ziur.Infrastructure.Configuration;
 using System.Net.Http.Headers;
 using IgniteUI.Blazor.Controls;
@@ -24,7 +25,7 @@ if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(token))
     throw new InvalidOperationException("BaseUrl and Token must be configured in API settings.");
 }
 
-builder.Services.AddHttpClient<InventoryService>(client =>
+builder.Services.AddHttpClient<IInventoryService, InventoryService>(client =>
 {
     client.BaseAddress = new Uri(url);
     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
