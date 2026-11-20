@@ -1,5 +1,6 @@
 using Ziur.Shared.Models.DTOs;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Ziur.Infrastructure.Services;
 
