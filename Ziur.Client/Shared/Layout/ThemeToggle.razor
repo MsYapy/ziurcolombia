@@ -1,0 +1,55 @@
+@inject IJSRuntime JS
+
+<button 
+    class="theme-toggle" 
+    @onclick="ToggleTheme"
+    title="@(isDarkMode ? "Cambiar a tema claro" : "Cambiar a tema oscuro")"
+    aria-label="Toggle theme">
+    @if (isDarkMode)
+    {
+        <i class="bi bi-sun-fill"></i>
+    }
+    else
+    {
+        <i class="bi bi-moon-stars-fill"></i>
+    }
+</button>
+
+@code {
+    private bool isDarkMode = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Load saved theme preference
+            var savedTheme = await JS.InvokeAsync<string>("localStorage.getItem", "theme");
+            isDarkMode = savedTheme == "dark";
+            await ApplyTheme();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        isDarkMode = !isDarkMode;
+        await ApplyTheme();
+        
+        // Save preference
+        await JS.InvokeVoidAsync("localStorage.setItem", "theme", isDarkMode ? "dark" : "light");
+    }
+
+    private async Task ApplyTheme()
+    {
+        await JS.InvokeVoidAsync("eval", 
+            $"document.documentElement.setAttribute('data-theme', '{(isDarkMode ? "dark" : "light")}')");
+        
+        // Change IgniteUI theme
+        await JS.InvokeVoidAsync("eval", @$"
+            const link = document.querySelector('link[href*=""bootstrap.css""]');
+            if (link) {{
+                link.href = link.href.replace(/{(isDarkMode ? "light" : "dark")}\//, '{(isDarkMode ? "dark" : "light")}/');
+            }}
+        ");
+    }
+}

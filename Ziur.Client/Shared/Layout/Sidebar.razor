@@ -1,0 +1,57 @@
+@inject IJSRuntime JS
+
+<aside class="app-sidebar @(isCollapsed ? "collapsed" : "")" data-collapsed="@isCollapsed">
+    <div class="sidebar-header">
+        @if (!isCollapsed)
+        {
+            <div class="sidebar-brand">
+                <i class="bi bi-boxes brand-icon"></i>
+                <span class="brand-text">Ziur</span>
+            </div>
+        }
+        else
+        {
+            <div class="sidebar-brand-collapsed">
+                <i class="bi bi-boxes brand-icon"></i>
+            </div>
+        }
+        <button class="sidebar-toggle-btn" @onclick="ToggleSidebar" 
+                aria-label="@(isCollapsed ? "Expandir menú" : "Contraer menú")"
+                title="@(isCollapsed ? "Expandir menú" : "Contraer menú")">
+            <i class="bi @(isCollapsed ? "bi-chevron-right" : "bi-chevron-left")"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="/" class="nav-item active" title="Catálogo">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            @if (!isCollapsed)
+            {
+                <span>Catálogo</span>
+            }
+        </a>
+    </nav>
+</aside>
+
+@code {
+    private bool isCollapsed = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var collapsed = await JS.InvokeAsync<string>("localStorage.getItem", "sidebarCollapsed");
+            if (!string.IsNullOrEmpty(collapsed) && bool.TryParse(collapsed, out bool parsedValue))
+            {
+                isCollapsed = parsedValue;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task ToggleSidebar()
+    {
+        isCollapsed = !isCollapsed;
+        await JS.InvokeVoidAsync("localStorage.setItem", "sidebarCollapsed", isCollapsed.ToString().ToLower());
+    }
+}

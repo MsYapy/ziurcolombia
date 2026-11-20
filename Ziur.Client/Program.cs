@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Ziur.Client.Features.Inventory.Services;
 using IgniteUI.Blazor.Controls;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -13,3 +12,4 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // which resolves services from the server container, not the WebAssembly client container
 
 await builder.Build().RunAsync();
+
