@@ -1,0 +1,125 @@
+@using Ziur.Shared.Models.DTOs
+
+@if (Movements is null || Movements.Count == 0)
+{
+	<div class="empty-state">
+		<i class="bi bi-inbox"></i>
+		<p>@EmptyMessage</p>
+	</div>
+}
+else
+{
+	<div class="table-container">
+		<div class="table-scroll-wrapper">
+			<table class="professional-table">
+			<thead>
+				<tr>
+					<th @onclick="() => SortBy(nameof(MovementDto.Codigo))">
+						Código <i class="@GetSortIcon(nameof(MovementDto.Codigo))"></i>
+					</th>
+					<th @onclick="() => SortBy(nameof(MovementDto.Descripcion))">
+						Descripción <i class="@GetSortIcon(nameof(MovementDto.Descripcion))"></i>
+					</th>
+					<th @onclick="() => SortBy(nameof(MovementDto.VActiva))">
+						Estado <i class="@GetSortIcon(nameof(MovementDto.VActiva))"></i>
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var movement in sortedMovements)
+				{
+					<tr>
+						<td>@movement.Codigo</td>
+						<td>@movement.Descripcion</td>
+						<td>
+							<span class="status-badge @GetStatusClass(movement.VActiva)">
+								@GetStatusText(movement.VActiva)
+							</span>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+	
+	<div class="table-footer">
+		<div class="record-count">
+			@Movements.Count @(Movements.Count == 1 ? "registro" : "registros")
+		</div>
+		<div class="sort-hint">
+			<i class="bi bi-info-circle"></i>
+			Haz clic en los encabezados para ordenar
+		</div>
+	</div>
+	</div>
+}
+
+@code {
+	[Parameter]
+	public IReadOnlyList<MovementDto> Movements { get; set; } = Array.Empty<MovementDto>();
+
+	[Parameter]
+	public string EmptyMessage { get; set; } = "No se encontraron registros";
+
+	private string? sortColumn;
+	private bool sortAscending = true;
+	private IEnumerable<MovementDto> sortedMovements => GetSortedMovements();
+
+	private IEnumerable<MovementDto> GetSortedMovements()
+	{
+		if (Movements is null || !Movements.Any())
+			return Enumerable.Empty<MovementDto>();
+
+		IEnumerable<MovementDto> result = Movements;
+
+		if (sortColumn is not null)
+		{
+			result = sortColumn switch
+			{
+				nameof(MovementDto.Codigo) => sortAscending 
+					? result.OrderBy(m => m.Codigo) 
+					: result.OrderByDescending(m => m.Codigo),
+				nameof(MovementDto.Descripcion) => sortAscending 
+					? result.OrderBy(m => m.Descripcion) 
+					: result.OrderByDescending(m => m.Descripcion),
+				nameof(MovementDto.VActiva) => sortAscending 
+					? result.OrderBy(m => m.VActiva) 
+					: result.OrderByDescending(m => m.VActiva),
+				_ => result
+			};
+		}
+
+		return result;
+	}
+
+	private void SortBy(string column)
+	{
+		if (sortColumn == column)
+		{
+			sortAscending = !sortAscending;
+		}
+		else
+		{
+			sortColumn = column;
+			sortAscending = true;
+		}
+	}
+
+	private string GetSortIcon(string column)
+	{
+		if (sortColumn != column)
+			return "bi bi-arrow-down-up";
+
+		return sortAscending ? "bi bi-arrow-up" : "bi bi-arrow-down";
+	}
+
+	private string GetStatusClass(bool isActive)
+	{
+		return isActive ? "status-active" : "status-inactive";
+	}
+
+	private string GetStatusText(bool isActive)
+	{
+		return isActive ? "Activo" : "Inactivo";
+	}
+}

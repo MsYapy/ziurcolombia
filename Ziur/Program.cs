@@ -1,9 +1,14 @@
+using Ziur.Client.Features.Inventory.Services;
 using Ziur.Components;
 using Ziur.Infrastructure.Services;
 using Ziur.Infrastructure.Configuration;
 using System.Net.Http.Headers;
+using IgniteUI.Blazor.Controls;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Register IgniteUI modules
+builder.Services.AddIgniteUIBlazor();
 
 // Configure API settings
 var apiSettings = builder.Configuration.GetSection(ApiSettings.SectionName).Get<ApiSettings>() 
@@ -26,6 +31,45 @@ builder.Services.AddHttpClient<InventoryService>(client =>
     // Add security headers
     client.DefaultRequestHeaders.Add("X-Content-Type-Options", "nosniff");
 });
+
+// Register InventoryServiceClient for InteractiveServer components
+// The HttpClient needs to be configured with the server's base address
+builder.Services.AddScoped<InventoryServiceClient>(sp =>
+{
+    // Get the IHttpContextAccessor to access the current request's host
+    var httpContextAccessor = sp.GetService<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient();
+    
+    // If we have an HTTP context (during a request), use it to get the base URL
+    if (httpContextAccessor?.HttpContext != null)
+    {
+        var request = httpContextAccessor.HttpContext.Request;
+        var baseUrl = $"{request.Scheme}://{request.Host}";
+        httpClient.BaseAddress = new Uri(baseUrl);
+    }
+    else
+    {
+        // Fallback to configured URL or default
+        var applicationUrl = builder.Configuration["ASPNETCORE_URLS"];
+        if (!string.IsNullOrEmpty(applicationUrl))
+        {
+            // Take the first URL if multiple are configured
+            var firstUrl = applicationUrl.Split(';')[0];
+            httpClient.BaseAddress = new Uri(firstUrl);
+        }
+        else
+        {
+            // Default fallback
+            httpClient.BaseAddress = new Uri("https://localhost:7164");
+        }
+    }
+    
+    return new InventoryServiceClient(httpClient);
+});
+
+// Add HttpContextAccessor for accessing the current request's context
+builder.Services.AddHttpContextAccessor();
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
